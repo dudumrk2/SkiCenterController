@@ -1,0 +1,248 @@
+{
+  "resortName": "Pila, Aosta Valley",
+  "mapImage": "https://pila.it/p12021l4/wp-content/themes/pila/img/skirama.jpg",
+  "gpsInterval": 300000,
+  "hotel": {
+    "name": "Hostellerie Du Cheval Blanc",
+    "location": {
+      "lat": 45.733,
+      "lng": 7.320
+    },
+    "address": "Via Clavalité, 20, 11100 Aosta AO, Italy",
+    "mapLink": "https://goo.gl/maps/example"
+  },
+  "airport": {
+    "name": "Milan Malpensa (MXP)",
+    "terminal": "Terminal 1",
+    "location": {
+      "lat": 45.630,
+      "lng": 8.723
+    },
+    "landingTime": "2025-01-18T22:50:00"
+  },
+  "carRental": {
+    "company": "Sicily By Car",
+    "location": "MXP Terminal 1",
+    "details": "Late fee: €50 after midnight. International Permit required."
+  },
+  "skiGear": {
+    "shopName": "Noleggio Sci La Soletta",
+    "location": {
+      "lat": 45.690,
+      "lng": 7.300
+    },
+    "notes": "At the top of the Aosta-Pila gondola."
+  },
+  "lifts": [
+    {
+      "id": "aosta-pila",
+      "name": "Aosta - Pila",
+      "type": "Gondola",
+      "status": "open",
+      "mapPath": "M 12 90"
+    },
+    {
+      "id": "chamole",
+      "name": "Chamolé",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 25 75"
+    },
+    {
+      "id": "leisse",
+      "name": "Leissé",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 35 60"
+    },
+    {
+      "id": "couis1",
+      "name": "Couis 1",
+      "type": "Chairlift",
+      "status": "closed",
+      "mapPath": "M 20 40 L 10 20"
+    },
+    {
+      "id": "couis2",
+      "name": "Couis 2",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 30 50 L 20 30"
+    },
+    {
+      "id": "grimod",
+      "name": "Grimod",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 60 50 L 70 30"
+    },
+    {
+      "id": "la-nouva",
+      "name": "La Nouva",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 70 60 L 80 40"
+    },
+    {
+      "id": "gorraz-grimod",
+      "name": "Gorraz G. Grimod",
+      "type": "Cable Car",
+      "status": "open",
+      "mapPath": "M 50 80 L 50 60"
+    },
+    {
+      "id": "pila-gorraz",
+      "name": "Pila - Gorraz",
+      "type": "Liaison",
+      "status": "open",
+      "mapPath": "M 18 82"
+    },
+    {
+      "id": "baby-gorraz",
+      "name": "Baby Gorraz",
+      "type": "Surface",
+      "status": "open",
+      "mapPath": "M 51 81"
+    },
+    {
+      "id": "baby-pila1",
+      "name": "Baby Pila 1",
+      "type": "Surface",
+      "status": "open",
+      "mapPath": "M 47 91"
+    },
+    {
+      "id": "baby-pila2",
+      "name": "Baby Pila 2",
+      "type": "Surface",
+      "status": "open",
+      "mapPath": "M 49 91"
+    },
+    {
+      "id": "grimondet",
+      "name": "Grimondet",
+      "type": "Chairlift",
+      "status": "open",
+      "mapPath": "M 80 50 L 90 30"
+    },
+    {
+      "id": "chacard",
+      "name": "Chacard",
+      "type": "Surface",
+      "status": "open",
+      "mapPath": "M 56 60"
+    },
+    {
+      "id": "alpage",
+      "name": "Alpage",
+      "type": "Surface",
+      "status": "closed",
+      "mapPath": "M 25 25"
+    }
+  ],
+  "trails": [
+    {
+      "id": "t2",
+      "name": "2 - Renato Rosa",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 55 40 Q 60 50 55 60"
+    },
+    {
+      "id": "t3",
+      "name": "3 - Gorraz",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 50 40 Q 45 60 50 80"
+    },
+    {
+      "id": "t4",
+      "name": "4 - Grimondet",
+      "difficulty": "Blue",
+      "status": "open",
+      "mapPath": "M 90 30 Q 80 60 85 70"
+    },
+    {
+      "id": "t1",
+      "name": "1 - Chamolé",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 40 40 Q 30 60 40 80"
+    },
+    {
+      "id": "t5",
+      "name": "5 - La Chatelaine",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 45 40 L 55 60"
+    },
+    {
+      "id": "t9",
+      "name": "9 - Couis 1",
+      "difficulty": "Black",
+      "status": "closed",
+      "mapPath": "M 10 20 Q 15 40 30 50"
+    },
+    {
+      "id": "t27",
+      "name": "27 - The Wall",
+      "difficulty": "Black",
+      "status": "open",
+      "mapPath": "M 90 30 L 90 50"
+    },
+    {
+      "id": "t26",
+      "name": "26 - Lo Goil",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 88 35"
+    },
+    {
+      "id": "t15",
+      "name": "15 - Leissé",
+      "difficulty": "Blue",
+      "status": "open",
+      "mapPath": "M 45 40 Q 40 50 45 60"
+    },
+    {
+      "id": "t16",
+      "name": "16 - Pré Noir",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 46 55"
+    },
+    {
+      "id": "t19",
+      "name": "19 - Grimod",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 70 30 Q 65 50 60 50"
+    },
+    {
+      "id": "t20",
+      "name": "20 - La Nouva",
+      "difficulty": "Red",
+      "status": "open",
+      "mapPath": "M 80 40 Q 75 60 70 60"
+    },
+    {
+      "id": "t24",
+      "name": "24 - Baby Pila",
+      "difficulty": "Blue",
+      "status": "open",
+      "mapPath": "M 48 89"
+    },
+    {
+      "id": "t25",
+      "name": "25 - Baby Gorraz",
+      "difficulty": "Blue",
+      "status": "open",
+      "mapPath": "M 52 79"
+    }
+  ],
+  "emergency": {
+    "police": "112",
+    "ambulance": "118",
+    "resortRescue": "+39 0165 521148"
+  }
+}
