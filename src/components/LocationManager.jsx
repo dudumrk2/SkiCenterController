@@ -12,7 +12,7 @@ const LocationManager = () => {
     useEffect(() => {
         if (!currentUser || !config) return;
 
-        const intervalMs = config.gpsInterval || 300000; // Default 5 min
+        const intervalMs = config.gpsInterval || 3000; // Faster for demo (3s)
         console.log(`Starting GPS Service. Interval: ${intervalMs}ms`);
 
         const interval = setInterval(() => {

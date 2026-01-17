@@ -1,4 +1,5 @@
 import React from 'react';
+// Rebuild Trigger
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -6,8 +7,6 @@ import ConfigScreen from './pages/ConfigScreen';
 import LoginScreen from './pages/LoginScreen'; // New Import
 import LocationManager from './components/LocationManager';
 import LiveMap from './components/LiveMap';
-import Checklist from './components/Checklist';
-import Schedule from './components/Schedule';
 import { ConfigProvider, useConfig } from './contexts/ConfigContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -52,8 +51,6 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="map" element={<LiveMap />} />
-        <Route path="checklist" element={<Checklist />} />
-        <Route path="schedule" element={<Schedule />} />
       </Route>
     </Routes>
   );

@@ -1,21 +1,36 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { FaMountain, FaList, FaRegCalendarAlt, FaMapMarkedAlt } from 'react-icons/fa';
 import SOSButton from './SOSButton';
 
 const Layout = () => {
+    const location = useLocation();
+    const isMapPage = location.pathname === '/map';
+
     const navItems = [
         { path: '/', icon: <FaMountain />, label: 'Dashboard' },
         { path: '/map', icon: <FaMapMarkedAlt />, label: 'Map' },
-        { path: '/checklist', icon: <FaList />, label: 'Pack' },
-        { path: '/schedule', icon: <FaRegCalendarAlt />, label: 'Plan' },
     ];
 
     return (
         <div className="layout-container">
             {/* Main Content Area */}
-            <main style={{ padding: '20px', paddingBottom: '100px', maxWidth: '800px', margin: '0 auto' }}>
-                <div className="glass-panel" style={{ minHeight: '80vh', padding: '20px' }}>
+            <main style={{
+                padding: isMapPage ? 0 : '20px',
+                paddingBottom: '100px',
+                maxWidth: isMapPage ? '100%' : '800px',
+                margin: '0 auto',
+                height: isMapPage ? '100vh' : 'auto',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                <div className={isMapPage ? '' : "glass-panel"} style={{
+                    flex: 1,
+                    padding: isMapPage ? 0 : '20px',
+                    borderRadius: isMapPage ? 0 : undefined,
+                    minHeight: isMapPage ? 0 : '80vh',
+                    overflow: 'hidden'
+                }}>
                     <Outlet />
                 </div>
             </main>
