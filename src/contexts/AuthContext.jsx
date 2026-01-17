@@ -19,30 +19,23 @@ export const AuthProvider = ({ children }) => {
         return unsubscribe;
     }, []);
 
-    const [userStatus, setUserStatus] = useState({
-        status: 'active',
-        location: null,
-        lift: null,
-        trail: null
+    const [userStatus, setUserStatus] = useState(() => {
+        const saved = localStorage.getItem('userStatus');
+        return saved ? JSON.parse(saved) : {
+            status: 'active',
+            location: null,
+            lift: null,
+            trail: null
+        };
     });
 
-    const loginWithGoogle = async () => {
-        try {
-            const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
-        } catch (error) {
-            console.error("Login Failed:", error);
-            alert("Login failed: " + error.message);
-        }
-    };
-
-    const logout = () => {
-        return signOut(auth);
-    };
+    // ... (login/logout functions)
 
     const updateUserStatus = async (status, location, lift, trail) => {
+        const newStatus = { status, location, lift, trail };
         // Optimistically update local state immediately
-        setUserStatus({ status, location, lift, trail });
+        setUserStatus(newStatus);
+        localStorage.setItem('userStatus', JSON.stringify(newStatus));
 
         if (!currentUser) return;
         // Log for verification

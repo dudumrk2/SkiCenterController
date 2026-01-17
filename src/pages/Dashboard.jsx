@@ -8,13 +8,14 @@ import MapWithStatus from '../components/MapWithStatus';
 import Schedule from '../components/Schedule';
 import { useTripMembers } from '../hooks/useTripMembers';
 import { useWakeLock } from '../hooks/useWakeLock';
-import { FaBatteryFull, FaRegEye } from 'react-icons/fa';
+import { FaBatteryFull, FaRegEye, FaRegPaperPlane } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { config } = useConfig();
     const { userStatus } = useAuth(); // Get live status
     const { members } = useTripMembers();
     const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
+    const [showLockScreen, setShowLockScreen] = React.useState(false);
 
     if (!config) return null;
 
@@ -60,7 +61,13 @@ const Dashboard = () => {
             {/* iOS Web Ski Mode Toggle */}
             {isSupported && (
                 <button
-                    onClick={toggleWakeLock}
+                    onClick={() => {
+                        toggleWakeLock();
+                        // Auto-show lock screen if we are TURNING ON ski mode
+                        if (!isWakeLockActive) {
+                            setShowLockScreen(true);
+                        }
+                    }}
                     className="glass-panel"
                     style={{
                         width: '100%',
@@ -81,6 +88,37 @@ const Dashboard = () => {
                         {isWakeLockActive ? "Ski Mode Active (Screen On)" : "Enable Ski Mode"}
                     </span>
                 </button>
+            )}
+
+            {/* POCKET LOCK OVERLAY */}
+            {showLockScreen && isWakeLockActive && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.9)', zIndex: 10000,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    touchAction: 'none' // Prevent scrolling
+                }}>
+                    <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
+                    <h2 style={{ color: 'white' }}>Ski Mode Active</h2>
+                    <p style={{ color: '#aaa', marginBottom: '40px' }}>Screen is locked to prevent touches.</p>
+
+                    <button
+                        onClick={() => setShowLockScreen(false)}
+                        style={{
+                            padding: '20px 40px',
+                            background: 'transparent',
+                            border: '2px solid var(--color-primary)',
+                            color: 'var(--color-primary)',
+                            borderRadius: '50px',
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Double Tap to Unlock
+                    </button>
+                    <p style={{ marginTop: '10px', fontSize: '0.8rem', opacity: 0.5 }}>(Simulation: Just Click for now)</p>
+                </div>
             )}
 
             <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>{config.resortName}</h1>
@@ -133,6 +171,12 @@ const Dashboard = () => {
                                 );
                             })}
                         </div>
+                    </div>
+                )}
+                {friends.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '20px', opacity: 0.6, fontSize: '0.9rem' }}>
+                        <p>No other skiers in this trip yet.</p>
+                        <p style={{ fontSize: '0.8rem' }}>Click the Share icon <FaRegPaperPlane style={{ display: 'inline' }} /> above to invite friends!</p>
                     </div>
                 )}
             </div>
