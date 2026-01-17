@@ -1,20 +1,39 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom'; // Import Portal
+import { createPortal } from 'react-dom';
 import { FaBiohazard, FaExclamationTriangle } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
+import { db } from '../lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const SOSButton = () => {
-    const { updateUserStatus } = useAuth();
-    const { config } = useConfig();
+    const { currentUser, updateUserStatus } = useAuth();
+    const { config, tripId } = useConfig(); // Get tripId
     const [showConfirm, setShowConfirm] = useState(false);
     const [active, setActive] = useState(false);
 
-    const handleSOS = () => {
-        // In real app, get current location immediately
-        updateUserStatus('SOS', null); // Status 'SOS'
+    const handleSOS = async () => {
+        // 1. Local Update
+        updateUserStatus('SOS', null);
         setActive(true);
         setShowConfirm(false);
+
+        // 2. Cloud Sync (Priority)
+        if (tripId && currentUser) {
+            try {
+                console.log("SENDING SHARED SOS...");
+                const userLocRef = doc(db, `trips/${tripId}/locations`, currentUser.uid);
+                await setDoc(userLocRef, {
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName || 'Anonymous Skier (SOS)',
+                    status: 'SOS', // Special status flag
+                    lastUpdated: serverTimestamp()
+                }, { merge: true });
+            } catch (e) {
+                console.error("SOS Sync Failed", e);
+            }
+        }
+
         alert(`SOS SIGNAL SENT! \nCalling Resort Rescue: ${config?.emergency?.resortRescue}`);
         // window.location.href = `tel:${config?.emergency?.resortRescue}`;
     };

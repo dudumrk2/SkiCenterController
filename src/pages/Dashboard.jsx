@@ -6,11 +6,12 @@ import ProfileCard from '../components/ProfileCard';
 import ResortStatusCard from '../components/ResortStatusCard';
 import MapWithStatus from '../components/MapWithStatus';
 import Schedule from '../components/Schedule';
-import { mockFriends } from '../data/mockFriends';
+import { useTripMembers } from '../hooks/useTripMembers';
 
 const Dashboard = () => {
     const { config } = useConfig();
     const { userStatus } = useAuth(); // Get live status
+    const { members } = useTripMembers();
 
     if (!config) return null;
 
@@ -34,15 +35,20 @@ const Dashboard = () => {
             };
         }
         // Default
+        let displayLoc = location || config.hotel?.name || 'Resort';
+        if (typeof displayLoc === 'object') {
+            displayLoc = "On Mountain";
+        }
+
         return {
-            location: location || config.hotel?.name || 'Resort',
+            location: displayLoc,
             activity: 'Relaxing',
             color: '#94a3b8'
         };
     };
 
     const currentStatus = getStatusDisplay(userStatus);
-    const friends = mockFriends || [];
+    const friends = members || []; // Use real members
 
     return (
         <div className="dashboard">

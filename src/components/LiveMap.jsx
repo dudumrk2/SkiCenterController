@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
-import { mockFriends } from '../data/mockFriends';
+import { useRide } from '../contexts/RideContext';
+import { useTripMembers } from '../hooks/useTripMembers'; // New Hook
 import L from 'leaflet';
 
 // Fix Leaflet Default Icon
@@ -51,22 +52,27 @@ const createCustomIcon = (name, color) => {
     });
 };
 
-const FRIEND_COLORS = {
-    f1: '#ef4444', // Red (Sarah)
-    f2: '#f59e0b', // Orange (Mike)
-    f3: '#10b981', // Green (Jessica)
-    f4: '#8b5cf6', // Purple (David)
-};
+const FRIEND_COLORS = [
+    '#ef4444', // Red
+    '#f59e0b', // Orange
+    '#10b981', // Green
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#14b8a6'  // Teal
+];
 
 // Component to recenter map on user location
 const MapRecenter = ({ center }) => {
     const map = useMap();
+    const hasCentered = React.useRef(false);
+
     useEffect(() => {
-        if (center && center.lat && center.lng) {
+        if (center && center.lat && center.lng && !hasCentered.current) {
             map.flyTo([center.lat, center.lng], 15, {
                 animate: true,
                 duration: 1.5
             });
+            hasCentered.current = true;
         }
     }, [center, map]);
     return null;
@@ -75,6 +81,8 @@ const MapRecenter = ({ center }) => {
 const LiveMap = () => {
     const { config } = useConfig();
     const { userStatus } = useAuth();
+    const { isRecording, startRecording, stopRecording, currentPath, currentRideStats } = useRide();
+    const { members } = useTripMembers();
 
     // Default center (Resort Base or Configured Hotel)
     const defaultCenter = config.hotel?.location || { lat: 45.733, lng: 7.320 };
@@ -96,15 +104,27 @@ const LiveMap = () => {
                     {/* Live Recenter */}
                     <MapRecenter center={userStatus.location} />
 
+                    {/* Recorded Path visualization */}
+                    {isRecording && currentPath.length > 1 && (
+                        <Polyline
+                            positions={currentPath.map(p => [p.lat, p.lng])}
+                            color="#ef4444" // Red/Orange for tracking
+                            weight={4}
+                            opacity={0.8}
+                        />
+                    )}
+
                     {/* Resort POIs (Standard Markers for context) */}
                     <Marker position={[config.hotel.location.lat, config.hotel.location.lng]}>
                         <Popup>🏨 {config.hotel.name}</Popup>
                     </Marker>
 
                     {/* Real-time Users (Friends) */}
-                    {mockFriends.map(user => {
+                    {members.map((user, index) => {
                         if (!user.coordinates) return null;
-                        const color = FRIEND_COLORS[user.id] || '#3b82f6'; // Fallback Blue
+
+                        // Deterministic color based on name/index
+                        const color = FRIEND_COLORS[index % FRIEND_COLORS.length] || '#3b82f6';
 
                         return (
                             <Marker
@@ -114,7 +134,7 @@ const LiveMap = () => {
                             >
                                 <Popup>
                                     <strong>{user.name}</strong><br />
-                                    {user.status.lift ? `On ${user.status.lift}` : user.status.trail ? `Skiing ${user.status.trail}` : 'Relaxing'}
+                                    {user.status.location || 'Unknown'}
                                 </Popup>
                             </Marker>
                         );
@@ -135,6 +155,80 @@ const LiveMap = () => {
                     )}
 
                 </MapContainer>
+
+                {/* RECORDING CONTROL OVERLAY */}
+                <div style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 900,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    {isRecording ? (
+                        <>
+                            {/* Stats Box */}
+                            <div style={{
+                                background: 'rgba(15, 23, 42, 0.9)',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                display: 'flex',
+                                gap: '16px',
+                                fontSize: '0.9rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                            }}>
+                                <span>📏 {currentRideStats.distance.toFixed(2)} km</span>
+                                <span>⏱️ {Math.floor(currentRideStats.duration / 60)}:{(currentRideStats.duration % 60).toFixed(0).padStart(2, '0')}</span>
+                            </div>
+
+                            {/* Stop Button */}
+                            <button
+                                onClick={stopRecording}
+                                style={{
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '10px 24px',
+                                    borderRadius: '50px',
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                ⏹ Stop Recording
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={startRecording}
+                            style={{
+                                background: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                padding: '10px 24px',
+                                borderRadius: '50px',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            ⏺ Start Recording
+                        </button>
+                    )}
+                </div>
+
             </div>
         </div>
     );

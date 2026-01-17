@@ -4,11 +4,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import ConfigScreen from './pages/ConfigScreen';
-import LoginScreen from './pages/LoginScreen'; // New Import
+import LoginScreen from './pages/LoginScreen';
+import History from './pages/History'; // New Import
 import LocationManager from './components/LocationManager';
 import LiveMap from './components/LiveMap';
 import { ConfigProvider, useConfig } from './contexts/ConfigContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { RideProvider } from './contexts/RideContext';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -51,6 +53,7 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="map" element={<LiveMap />} />
+        <Route path="history" element={<History />} />
       </Route>
     </Routes>
   );
@@ -60,10 +63,12 @@ function App() {
   return (
     <AuthProvider>
       <ConfigProvider>
-        <LocationManager />
-        <Router>
-          <AppRoutes />
-        </Router>
+        <RideProvider>
+          <LocationManager />
+          <Router>
+            <AppRoutes />
+          </Router>
+        </RideProvider>
       </ConfigProvider>
     </AuthProvider>
   );

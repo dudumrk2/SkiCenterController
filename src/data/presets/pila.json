@@ -1,6 +1,7 @@
 {
   "resortName": "Pila, Aosta Valley",
-  "mapImage": "https://pila.it/p12021l4/wp-content/themes/pila/img/skirama.jpg",
+  "mapImage": "/pila-map.jpg",
+  "staticMapPdf": "/pila-map.jpg",
   "gpsInterval": 300000,
   "hotel": {
     "name": "Hostellerie Du Cheval Blanc",

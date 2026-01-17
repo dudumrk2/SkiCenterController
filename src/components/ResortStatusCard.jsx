@@ -86,13 +86,14 @@ const ResortStatusCard = () => {
                             display: 'flex', alignItems: 'center', gap: '8px',
                             background: 'rgba(255,255,255,0.1)', padding: '6px 10px', borderRadius: '6px',
                             textDecoration: 'none', color: 'white', fontSize: '0.8rem', cursor: 'pointer',
-                            transition: 'background 0.2s'
+                            transition: 'background 0.2s',
+                            minWidth: 0 // Allow flex/grid item to shrink
                         }}
                     >
-                        <FaBed size={14} color="#fcd34d" />
-                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        <FaBed size={14} color="#fcd34d" style={{ flexShrink: 0 }} />
+                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', minWidth: 0 }}>
                             <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>Hotel</div>
-                            <div style={{ fontWeight: 'bold' }}>{config.hotel.name}</div>
+                            <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis' }}>{config.hotel.name}</div>
                         </div>
                     </a>
                 )}
@@ -105,13 +106,14 @@ const ResortStatusCard = () => {
                             display: 'flex', alignItems: 'center', gap: '8px',
                             background: 'rgba(255,255,255,0.1)', padding: '6px 10px', borderRadius: '6px',
                             textDecoration: 'none', color: 'white', fontSize: '0.8rem', cursor: 'pointer',
-                            transition: 'background 0.2s'
+                            transition: 'background 0.2s',
+                            minWidth: 0 // Allow flex/grid item to shrink
                         }}
                     >
-                        <FaSkiing size={14} color="#60a5fa" />
-                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        <FaSkiing size={14} color="#60a5fa" style={{ flexShrink: 0 }} />
+                        <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', minWidth: 0 }}>
                             <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>Gear</div>
-                            <div style={{ fontWeight: 'bold' }}>{config.skiGear.shopName}</div>
+                            <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis' }}>{config.skiGear.shopName}</div>
                         </div>
                     </a>
                 )}

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useConfig } from '../contexts/ConfigContext';
-import { FaSignOutAlt, FaCog } from 'react-icons/fa';
+import { FaSignOutAlt, FaCog, FaShareAlt } from 'react-icons/fa';
 
 const ProfileCard = () => {
     const { currentUser, logout } = useAuth();
-    const { resetConfig } = useConfig();
+    const { resetConfig, tripId } = useConfig();
 
     if (!currentUser) return null;
 
@@ -37,6 +37,20 @@ const ProfileCard = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
+                {tripId && (
+                    <button
+                        onClick={() => {
+                            const link = `${window.location.origin}/?tripId=${tripId}`;
+                            navigator.clipboard.writeText(link);
+                            alert("Trip Link Copied! Share it with friends.");
+                        }}
+                        className="glass-btn"
+                        style={{ padding: '8px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8' }}
+                        title="Share Trip Link"
+                    >
+                        <FaShareAlt />
+                    </button>
+                )}
                 <button
                     onClick={resetConfig}
                     className="glass-btn"

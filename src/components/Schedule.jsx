@@ -17,7 +17,16 @@ const Schedule = () => {
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h1 style={{ textAlign: 'center' }}>Daily Schedule</h1>
 
-            <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', marginBottom: '20px' }}>
+            <div style={{
+                display: 'flex',
+                overflowX: 'auto',
+                gap: '10px',
+                paddingBottom: '10px',
+                marginBottom: '20px',
+                width: '100%',
+                paddingRight: '20px', // Prevent cut-off feel
+                WebkitOverflowScrolling: 'touch' // Smooth momentum scroll
+            }}>
                 {days.map(day => (
                     <button
                         key={day.id}
