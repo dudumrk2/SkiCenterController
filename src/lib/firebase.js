@@ -5,13 +5,13 @@ import { getAnalytics } from "firebase/analytics";
 
 // Config provided by User
 const firebaseConfig = {
-  apiKey: "AIzaSyBPVYizs4ouACivESHa1hvAIYl0Fe8niNw",
-  authDomain: "myskiapp-d2e86.firebaseapp.com",
-  projectId: "myskiapp-d2e86",
-  storageBucket: "myskiapp-d2e86.firebasestorage.app",
-  messagingSenderId: "671681089185",
-  appId: "1:671681089185:web:9060a61d7a231cc77beae0",
-  measurementId: "G-YBVR6K3EDP"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);

@@ -8,35 +8,64 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 // PILA (Aosta Valley) Base Coordinates
 const PILA_BASE = { lat: 45.733, lng: 7.320 };
 
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+
 const LocationManager = () => {
     const { currentUser, updateUserStatus } = useAuth();
-    const { config, tripId } = useConfig(); // Pull tripId
+    const { config, tripId } = useConfig();
     const { isRecording } = useRide();
 
     useEffect(() => {
         if (!currentUser || !config) return;
 
-        // Dynamic Interval: Use recording interval if recording, else standard
-        const intervalMs = isRecording
-            ? (config.recordingInterval || 5000)
-            : (config.gpsInterval || 60000);
+        let watchId = null;
+        let intervalId = null;
 
-        const interval = setInterval(async () => {
-            // Simulate movement around the base + random jitter
-            // Uses configured hotel location if available, else Pila Base
-            const baseLat = config.hotel?.location?.lat || PILA_BASE.lat;
-            const baseLng = config.hotel?.location?.lng || PILA_BASE.lng;
+        const startTracking = async () => {
+            const isNative = Capacitor.isNativePlatform();
+            console.log(`[LocationService] Starting. Native: ${isNative}, Recording: ${isRecording}`);
 
-            const jitter = 0.002;
-            const lat = baseLat + (Math.random() * jitter - jitter / 2);
-            const lng = baseLng + (Math.random() * jitter - jitter / 2);
+            if (isNative) {
+                // NATIVE: Use Capacitor Geolocation
+                try {
+                    await Geolocation.checkPermissions();
+                    watchId = await Geolocation.watchPosition({
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 3000 // Allow slightly cached positions for battery
+                    }, (position, err) => {
+                        if (position) {
+                            handleLocationUpdate({
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            });
+                        }
+                    });
+                } catch (e) {
+                    console.error("Native GPS Error:", e);
+                }
+            } else {
+                // WEB: Simulation (or Browser GPS if we wanted)
+                // Keeping simulation as per original requirement for now, 
+                // but effectively 'Ski Mode' wake lock keeps this interval alive.
+                const intervalMs = isRecording ? (config.recordingInterval || 5000) : (config.gpsInterval || 60000);
+                intervalId = setInterval(async () => {
+                    const baseLat = config.hotel?.location?.lat || PILA_BASE.lat;
+                    const baseLng = config.hotel?.location?.lng || PILA_BASE.lng;
+                    const jitter = 0.002;
+                    const lat = baseLat + (Math.random() * jitter - jitter / 2);
+                    const lng = baseLng + (Math.random() * jitter - jitter / 2);
+                    handleLocationUpdate({ lat, lng });
+                }, intervalMs);
+            }
+        };
 
-            const location = { lat, lng };
-
-            // 1. Send update to Local State (for UI)
+        const handleLocationUpdate = async (location) => {
+            // 1. Local Update
             updateUserStatus('active', location);
 
-            // 2. Sync to Cloud (If in Trip)
+            // 2. Cloud Sync
             if (tripId && currentUser) {
                 try {
                     const userLocRef = doc(db, `trips/${tripId}/locations`, currentUser.uid);
@@ -48,15 +77,17 @@ const LocationManager = () => {
                         status: 'active',
                         lastUpdated: serverTimestamp()
                     }, { merge: true });
-                } catch (e) {
-                    // Silently fail on network error to avoid spam
-                }
+                } catch (e) { }
             }
+        };
 
-        }, intervalMs);
+        startTracking();
 
-        return () => clearInterval(interval);
-    }, [currentUser, config, isRecording, tripId]); // Re-run when mode or tripId changes
+        return () => {
+            if (watchId) Geolocation.clearWatch({ id: watchId });
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [currentUser, config, isRecording, tripId]);
 
     return null;
 };

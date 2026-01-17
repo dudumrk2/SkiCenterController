@@ -7,11 +7,14 @@ import ResortStatusCard from '../components/ResortStatusCard';
 import MapWithStatus from '../components/MapWithStatus';
 import Schedule from '../components/Schedule';
 import { useTripMembers } from '../hooks/useTripMembers';
+import { useWakeLock } from '../hooks/useWakeLock';
+import { FaBatteryFull, FaRegEye } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { config } = useConfig();
     const { userStatus } = useAuth(); // Get live status
     const { members } = useTripMembers();
+    const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
 
     if (!config) return null;
 
@@ -53,6 +56,33 @@ const Dashboard = () => {
     return (
         <div className="dashboard">
             <ProfileCard />
+
+            {/* iOS Web Ski Mode Toggle */}
+            {isSupported && (
+                <button
+                    onClick={toggleWakeLock}
+                    className="glass-panel"
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        marginBottom: '15px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        background: isWakeLockActive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)',
+                        border: isWakeLockActive ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.1)',
+                        color: isWakeLockActive ? '#4ade80' : 'var(--color-text-muted)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {isWakeLockActive ? <FaRegEye /> : <FaBatteryFull />}
+                    <span style={{ fontWeight: 'bold' }}>
+                        {isWakeLockActive ? "Ski Mode Active (Screen On)" : "Enable Ski Mode"}
+                    </span>
+                </button>
+            )}
+
             <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>{config.resortName}</h1>
 
             {/* Real-time Status via Gemini */}
