@@ -51,7 +51,12 @@ const Dashboard = () => {
         };
     };
 
-    const currentStatus = getStatusDisplay(userStatus);
+    // Safety check for userStatus
+    const currentStatus = userStatus ? getStatusDisplay(userStatus) : {
+        location: 'Unknown',
+        activity: 'Loading...',
+        color: '#94a3b8'
+    };
     const friends = members || []; // Use real members
 
     return (
@@ -94,21 +99,21 @@ const Dashboard = () => {
             {showLockScreen && isWakeLockActive && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.9)', zIndex: 10000,
+                    background: '#000000', zIndex: 10000,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     touchAction: 'none' // Prevent scrolling
                 }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
-                    <h2 style={{ color: 'white' }}>Ski Mode Active</h2>
-                    <p style={{ color: '#aaa', marginBottom: '40px' }}>Screen is locked to prevent touches.</p>
+                    <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🔒</div>
+                    <h2 style={{ color: '#444', margin: '0 0 10px 0' }}>Ski Mode Active</h2>
+                    <p style={{ color: '#333', marginBottom: '40px' }}>Screen dimmed to save battery.</p>
 
                     <button
                         onClick={() => setShowLockScreen(false)}
                         style={{
                             padding: '20px 40px',
                             background: 'transparent',
-                            border: '2px solid var(--color-primary)',
-                            color: 'var(--color-primary)',
+                            border: '2px solid #333',
+                            color: '#333',
                             borderRadius: '50px',
                             fontSize: '1.2rem',
                             fontWeight: 'bold',
@@ -117,7 +122,7 @@ const Dashboard = () => {
                     >
                         Double Tap to Unlock
                     </button>
-                    <p style={{ marginTop: '10px', fontSize: '0.8rem', opacity: 0.5 }}>(Simulation: Just Click for now)</p>
+                    <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.2, color: '#444' }}>(Simulation: Just Click for now)</p>
                 </div>
             )}
 

@@ -20,16 +20,48 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const [userStatus, setUserStatus] = useState(() => {
-        const saved = localStorage.getItem('userStatus');
-        return saved ? JSON.parse(saved) : {
-            status: 'active',
-            location: null,
-            lift: null,
-            trail: null
-        };
+        try {
+            const saved = localStorage.getItem('userStatus');
+            return saved ? JSON.parse(saved) : {
+                status: 'active',
+                location: null,
+                lift: null,
+                trail: null
+            };
+        } catch (e) {
+            console.error("Failed to parse userStatus from localStorage", e);
+            return {
+                status: 'active',
+                location: null,
+                lift: null,
+                trail: null
+            };
+        }
     });
 
-    // ... (login/logout functions)
+    const loginWithGoogle = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Login failed", error);
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await signOut(auth);
+            setUserStatus({
+                status: 'active',
+                location: null,
+                lift: null,
+                trail: null
+            });
+            localStorage.removeItem('userStatus');
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
 
     const updateUserStatus = async (status, location, lift, trail) => {
         const newStatus = { status, location, lift, trail };
