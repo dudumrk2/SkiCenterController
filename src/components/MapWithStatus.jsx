@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { FaExpand, FaTimes, FaUndo } from 'react-icons/fa';
 
@@ -7,16 +8,56 @@ const MapWithStatus = () => {
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isRotated, setIsRotated] = useState(false);
 
-    // Auto-rotate on Mobile when opening Full Screen
+    // State for exact viewport dimensions
+    const getViewportSize = () => {
+        if (window.visualViewport) {
+            return { width: window.visualViewport.width, height: window.visualViewport.height };
+        }
+        return { width: window.innerWidth, height: window.innerHeight };
+    };
+
+    const [viewportSize, setViewportSize] = useState(getViewportSize());
+
+    // Handle Resize & Orientation
+    useEffect(() => {
+        const handleResize = () => {
+            setViewportSize(getViewportSize());
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
+
+    // Auto-rotate & Lock Scroll
     useEffect(() => {
         if (isFullScreen) {
-            const isMobile = window.innerWidth <= 768; // Standard Mobile Breakpoint
-            if (isMobile) {
+            // Smart Rotation: Only if Portrait
+            const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            if (isPortrait) {
                 setIsRotated(true);
             }
+            // Lock Body Scroll
+            document.body.style.overflow = 'hidden';
         } else {
-            setIsRotated(false); // Reset when closing
+            setIsRotated(false); // Reset
+            document.body.style.overflow = '';
         }
+
+        // Cleanup
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isFullScreen]);
 
     if (!config) return null;
@@ -68,18 +109,20 @@ const MapWithStatus = () => {
                 </div>
             </div>
 
-            {/* Full Screen Modal */}
-            {isFullScreen && (
+            {/* Full Screen Modal - Using Portal to sit above everything */}
+            {isFullScreen && createPortal(
                 <div style={{
                     position: 'fixed',
                     top: 0,
                     left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 5000,
+                    width: `${viewportSize.width}px`,   // Explicit Pixel Width
+                    height: `${viewportSize.height}px`, // Explicit Pixel Height
+                    zIndex: 99999, // Max Z-Index
                     background: '#0f172a',
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    touchAction: 'none',
+                    overscrollBehavior: 'none'
                 }}>
                     {/* Toolbar */}
                     <div style={{
@@ -126,16 +169,17 @@ const MapWithStatus = () => {
                         <div style={{
                             width: '100%',
                             height: '100%',
-                            transform: isRotated ? 'rotate(90deg)' : 'none',
+                            // When rotated: Center it absolutely, then rotate
+                            transform: isRotated ? 'translate(-50%, -50%) rotate(90deg)' : 'none',
                             transformOrigin: 'center center',
                             // Adjust dimensions when rotated to fill screen
                             ...(isRotated ? {
-                                width: '100vh',
-                                height: '100vw',
+                                width: `${viewportSize.height}px`, // Swap W/H
+                                height: `${viewportSize.width}px`, // Swap W/H
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
-                                margin: '-50vw 0 0 -50vh'
+                                margin: 0
                             } : {})
                         }}>
                             {mapUrl.endsWith('.pdf') ? (
@@ -153,7 +197,8 @@ const MapWithStatus = () => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body // Render directly to body
             )}
         </>
     );

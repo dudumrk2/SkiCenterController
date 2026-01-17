@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useConfig } from '../contexts/ConfigContext';
 import { useAuth } from '../contexts/AuthContext';
 import StatusControl from '../components/StatusControl';
@@ -16,6 +17,44 @@ const Dashboard = () => {
     const { members } = useTripMembers();
     const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
     const [showLockScreen, setShowLockScreen] = React.useState(false);
+    // State for exact viewport dimensions
+    const getViewportSize = () => {
+        if (window.visualViewport) {
+            return { width: window.visualViewport.width, height: window.visualViewport.height };
+        }
+        return { width: window.innerWidth, height: window.innerHeight };
+    };
+
+    const [viewportSize, setViewportSize] = React.useState(getViewportSize());
+
+    // Handle Resize
+    React.useEffect(() => {
+        const handleResize = () => setViewportSize(getViewportSize());
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        }
+    }, []);
+
+    // Lock Scroll when Ski Mode is active
+    React.useEffect(() => {
+        if (showLockScreen && isWakeLockActive) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; }
+    }, [showLockScreen, isWakeLockActive]);
 
     if (!config) return null;
 
@@ -95,13 +134,16 @@ const Dashboard = () => {
                 </button>
             )}
 
-            {/* POCKET LOCK OVERLAY */}
-            {showLockScreen && isWakeLockActive && (
+            {/* POCKET LOCK OVERLAY - Using Portal with JS Dimensions */}
+            {showLockScreen && isWakeLockActive && createPortal(
                 <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: '#000000', zIndex: 10000,
+                    position: 'fixed', top: 0, left: 0,
+                    width: `${viewportSize.width}px`,
+                    height: `${viewportSize.height}px`,
+                    background: '#000000', zIndex: 99999, // Max Z
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    touchAction: 'none' // Prevent scrolling
+                    touchAction: 'none',
+                    overscrollBehavior: 'none'
                 }}>
                     <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🔒</div>
                     <h2 style={{ color: '#444', margin: '0 0 10px 0' }}>Ski Mode Active</h2>
@@ -123,7 +165,8 @@ const Dashboard = () => {
                         Double Tap to Unlock
                     </button>
                     <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.2, color: '#444' }}>(Simulation: Just Click for now)</p>
-                </div>
+                </div>,
+                document.body
             )}
 
             <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>{config.resortName}</h1>
