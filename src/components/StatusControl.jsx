@@ -69,30 +69,51 @@ const StatusControl = () => {
                             disabled={isClosed}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>{lift.name}</span>
-                                {isClosed && <span style={{ fontSize: '0.6rem', color: '#fca5a5', fontWeight: 'bold' }}>CLOSED</span>}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span>{lift.name}</span>
+                                    {lift.serves && lift.serves.length > 0 && (
+                                        <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>
+                                            → {lift.serves.join(', ')}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div style={{ textAlign: 'right' }}>
+                                    {isClosed && <span style={{ fontSize: '0.6rem', color: '#fca5a5', fontWeight: 'bold' }}>CLOSED</span>}
+                                    <div style={{ opacity: 0.6, fontSize: '0.65rem' }}>{lift.type}</div>
+                                </div>
                             </div>
-                            <span style={{ opacity: 0.6, fontSize: '0.7rem' }}>({lift.type})</span>
                         </button>
                     );
                 })}
 
                 {activeTab === 'run' && config.trails?.map(trail => {
                     const isSelected = trail.id === selectedId;
+                    const colors = getTrailColor(trail.difficulty);
+
                     return (
                         <button
                             key={trail.id}
                             className="glass-btn"
                             style={{
                                 fontSize: '0.8rem',
+                                color: 'white',
                                 textAlign: 'left',
-                                borderLeft: `4px solid ${getTrailColor(trail.difficulty)}`,
-                                background: isSelected ? '#22c55e' : 'rgba(255,255,255,0.05)',
-                                outline: isSelected ? '1px solid #4ade80' : 'none'
+                                background: isSelected
+                                    ? '#22c55e'
+                                    : colors.bg,
+                                border: isSelected
+                                    ? '1px solid #4ade80'
+                                    : colors.border,
+                                fontWeight: 'bold',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                             }}
                             onClick={() => handleSelect(trail, 'run')}
                         >
-                            {trail.name}
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{trail.name}</span>
+                                {trail.status === 'closed' && <span style={{ fontSize: '0.6em', background: 'rgba(0,0,0,0.5)', padding: '2px 4px', borderRadius: '4px' }}>CLOSED</span>}
+                            </div>
                         </button>
                     );
                 })}
@@ -101,13 +122,15 @@ const StatusControl = () => {
     );
 };
 
-// Helper for Trail Colors
+// Helper for Trail Colors (Returns accessible background colors)
 const getTrailColor = (difficulty) => {
-    const norm = difficulty.toLowerCase();
-    if (norm.includes('black')) return 'black';
-    if (norm.includes('red')) return '#f43f5e';
-    if (norm.includes('blue')) return '#38bdf8';
-    return 'white';
+    const norm = difficulty ? difficulty.toLowerCase() : 'green';
+
+    if (norm.includes('black')) return { bg: 'rgba(30, 41, 59, 0.9)', border: '1px solid #94a3b8' }; // Dark Slate
+    if (norm.includes('red')) return { bg: 'rgba(239, 68, 68, 0.65)', border: '1px solid #fca5a5' }; // Red
+    if (norm.includes('blue')) return { bg: 'rgba(59, 130, 246, 0.65)', border: '1px solid #93c5fd' }; // Blue
+    // Default Green/Easy
+    return { bg: 'rgba(34, 197, 94, 0.65)', border: '1px solid #86efac' };
 };
 
 export default StatusControl;
