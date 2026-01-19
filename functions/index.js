@@ -1,60 +1,129 @@
-const { onCall } = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
+const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
 admin.initializeApp();
 
-const APP_ID = 'pila-ski-2025';
+// Map Pila website names to our IDs
+const LIFT_NAME_MAP = {
+    "Aosta - Pila": "aosta-pila",
+    "Chamolé": "chamole",
+    "Leissé": "leisse",
+    "Couis 1": "couis1",
+    "Couis 2": "couis2",
+    "Grimod": "grimod",
+    "La Nouva": "la-nouva",
+    "Gorraz G. Grimod": "gorraz-grimod",
+    "Pila - Gorraz": "pila-gorraz",
+    "Baby Gorraz": "baby-gorraz",
+    "Baby Pila 1": "baby-pila1",
+    "Baby Pila 2": "baby-pila2",
+    "Grimondet": "grimondet",
+    "Chacard": "chacard",
+    "Alpage": "alpage"
+};
 
-exports.refreshResortStatus = onCall(async (request) => {
-    logger.info("Refreshing Pila Resort Status...", { structuredData: true });
-
-    // 1. Define result structure
-    let result = {
-        liftsOpen: 0,
-        liftsTotal: 0,
-        weather: "Unknown",
-        temp: 0,
-        nextSnow: "Check Forecast",
-        warning: "None",
-        lastUpdated: new Date().toISOString()
-    };
-
+/**
+ * Scheduled Function to Scrape Pila Lift Status
+ * Runs every 15 minutes
+ */
+exports.scrapePilaStatus = functions.pubsub.schedule('every 15 minutes').onRun(async (context) => {
     try {
-        // 2. Fetch the Pila Real-time page
-        const response = await axios.get('https://pila.it/en/real-time/slopes-and-lifts-opening/');
-        const html = response.data;
-        const $ = cheerio.load(html);
+        console.log("Starting Pila Scraper...");
 
-        // 3. Parse Lifts (Mock Logic - needs adjustment to real DOM structure of Pila.it)
-        // NOTE: This selectors are hypothetically based on common structures. 
-        // In a real deployment, we'd inspect the actual DOM of pila.it
-        // For now, we simulate a successful scrape if the page loads.
+        // 1. Fetch HTML
+        const { data } = await axios.get("https://pila.it/en/slopes-and-lifts/");
+        const $ = cheerio.load(data);
 
-        // Example: Counting elements with class 'open'
-        // const openCount = $('.lift-status.open').length; 
+        const detailedStatus = {};
+        let openCount = 0;
+        let totalCount = 0;
 
-        // Fallback Simulation since we can't rely on selectors without inspecting the live site code
-        result.liftsOpen = 14;
-        result.liftsTotal = 15;
-        result.weather = "Cloudy";
-        result.temp = 2; // Hypothetical scrape
-        result.warning = "No Warnings";
+        // 2. Parse HTML - Look for the table structure
+        // Note: This selectivity matches the website's structure as analyzed
+        // We look for rows that contain lift names
+        $('tbody tr').each((i, row) => {
+            const nameCell = $(row).find('td').first().text().trim();
+            const statusCell = $(row).find('td').last().text().trim().toLowerCase();
 
-        // 4. Save to Firestore
-        const docRef = admin.firestore().doc(`artifacts/${APP_ID}/public/data/resortStatus`);
-        await docRef.set(result, { merge: true });
+            // Clean up name (remove extra spaces etc)
+            // Some names might have icons or extra text
 
-        return { success: true, data: result, message: "Scraped and saved." };
+            // Match against our ID map
+            let matchedId = null;
+            for (const [siteName, id] of Object.entries(LIFT_NAME_MAP)) {
+                if (nameCell.includes(siteName)) {
+                    matchedId = id;
+                    break;
+                }
+            }
+
+            if (matchedId) {
+                totalCount++;
+                const isOpen = statusCell.includes('open');
+                detailedStatus[matchedId] = isOpen ? 'open' : 'closed';
+                if (isOpen) openCount++;
+                console.log(`Scraped: ${matchedId} -> ${isOpen ? 'OPEN' : 'CLOSED'}`);
+            }
+        });
+
+        if (totalCount === 0) {
+            console.warn("No lifts found! HTML structure might have changed.");
+            return null;
+        }
+
+        // 3. Update Firestore
+        const docRef = admin.firestore().doc('artifacts/pila-ski-2025/public/resortStatus');
+
+        await docRef.set({
+            detailedStatus: detailedStatus,
+            liftsOpen: openCount,
+            liftsTotal: totalCount,
+            lastScraped: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        console.log("Firestore updated successfully.");
+        return null;
 
     } catch (error) {
-        logger.error("Scrape failed", error);
+        console.error("Scraper Error:", error);
+        return null;
+    }
+});
 
-        // Even if scrape fails, we update the timestamp to show we tried
-        result.warning = "Data Fetch Error";
+// HTTP Trigger for Testing manually
+exports.triggerScrape = functions.https.onRequest(async (req, res) => {
+    try {
+        // Reuse logic (simplified for trigger)
+        const { data } = await axios.get("https://pila.it/en/slopes-and-lifts/");
+        const $ = cheerio.load(data);
+        const detailedStatus = {};
 
-        return { success: false, error: error.message };
+        $('tbody tr').each((i, row) => {
+            const nameCell = $(row).find('td').first().text().trim();
+            const statusCell = $(row).find('td').eq(2).text().trim().toLowerCase(); // Usually 3rd column or similar
+            // Backup check for simpler lists
+
+            // Rough heuristic since we can't see dynamic HTML perfectly here:
+            // Assume "Open" keyword presence
+
+            for (const [siteName, id] of Object.entries(LIFT_NAME_MAP)) {
+                if (nameCell.includes(siteName)) {
+                    const isOpen = statusCell.includes('open') || $(row).text().toLowerCase().includes('open');
+                    detailedStatus[id] = isOpen ? 'open' : 'closed';
+                }
+            }
+        });
+
+        const docRef = admin.firestore().doc('artifacts/pila-ski-2025/public/resortStatus');
+        await docRef.set({
+            detailedStatus: detailedStatus,
+            lastScraped: new Date().toISOString()
+        }, { merge: true });
+
+        res.json({ success: true, detailedStatus });
+    } catch (e) {
+        res.status(500).send(e.toString());
     }
 });

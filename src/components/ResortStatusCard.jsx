@@ -8,9 +8,9 @@ const ResortStatusCard = () => {
     const { config } = useConfig();
     const { statusData, loading, refreshStatus } = useResortStatus();
 
-    useEffect(() => {
-        refreshStatus();
-    }, []); // Run once on mount
+    // useEffect(() => {
+    //     refreshStatus(); // Disabled auto-simulation to prevent random updates on every reload
+    // }, []);
 
     return (
         <div className="glass-panel" style={{

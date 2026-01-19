@@ -46,49 +46,53 @@ export const useResortStatus = () => {
         try {
             const docRef = doc(db, 'artifacts', 'pila-ski-2025', 'public', 'resortStatus');
 
-            // Fetch latest first to ensure we base changes on current reality
-            // (avoids resetting to defaults on page load race condition)
+            // 1. Fetch Real Weather (OpenWeatherMap)
+            const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
+            let weatherData = {};
+
+            if (API_KEY) {
+                try {
+                    // Coordinates for Pila, Italy
+                    const lat = 45.71;
+                    const lon = 7.30;
+                    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
+                    const data = await response.json();
+
+                    if (data.main && data.weather) {
+                        weatherData = {
+                            temp: Math.round(data.main.temp),
+                            weather: data.weather[0].main, // e.g. 'Clouds', 'Snow'
+                            wind: Math.round(data.wind.speed * 3.6) + ' km/h', // Convert m/s to km/h
+                            desc: data.weather[0].description
+                        };
+                    }
+                } catch (err) {
+                    console.error("Weather Fetch Error:", err);
+                }
+            }
+
+            // 2. Fetch Latest Firestore Data (to keep lift status if we aren't scraping yet)
             const snap = await getDoc(docRef);
-            let currentTemp = statusData.temp;
+            let currentStatus = {
+                liftsOpen: 0,
+                liftsTotal: config?.lifts?.length || 0,
+                detailedStatus: {}
+            };
 
             if (snap.exists()) {
                 const data = snap.data();
-                if (typeof data.temp === 'number') currentTemp = data.temp;
+                currentStatus = { ...currentStatus, ...data };
             }
 
-            const randomTempChange = Math.floor(Math.random() * 3) - 1;
-            const newTemp = currentTemp + randomTempChange;
-
-            // Randomly close a lift
-            const lifts = config?.lifts || [];
-            const detailedStatus = {};
-            let closedCount = 0;
-
-            lifts.forEach(lift => {
-                const isClosed = Math.random() < 0.1;
-                detailedStatus[lift.id] = isClosed ? 'closed' : 'open';
-                if (isClosed) closedCount++;
-            });
-
-            // Also simulate trail status (assuming config.trails exists)
-            const trails = config?.trails || [];
-            trails.forEach(trail => {
-                // 5% chance to be closed
-                const isClosed = Math.random() < 0.05;
-                detailedStatus[trail.id] = isClosed ? 'closed' : 'open';
-            });
-
-            const openCount = lifts.length - closedCount;
-
+            // 3. Update Firestore (Merge Real Weather + Existing/Scraped Lift Status)
             await setDoc(docRef, {
-                liftsOpen: openCount,
-                liftsTotal: lifts.length,
-                weather: 'Cloudy',
-                temp: newTemp,
-                nextSnow: 'Tonight (65%)',
-                warning: closedCount > 0 ? 'Strong winds at summit' : 'No unusual warnings',
-                lastUpdated: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                detailedStatus: detailedStatus
+                ...currentStatus,
+                ...(weatherData.temp !== undefined ? {
+                    temp: weatherData.temp,
+                    weather: weatherData.weather,
+                    warning: weatherData.desc, // Use description as "warning" line for now
+                } : {}),
+                lastUpdated: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
             }, { merge: true });
 
         } catch (error) {
@@ -96,7 +100,7 @@ export const useResortStatus = () => {
         } finally {
             setLoading(false);
         }
-    }, [config, statusData.temp]); // Keep deps, though fetching fresh data makes temp dep less critical
+    }, [config]);
 
     return { statusData, loading, refreshStatus };
 };
