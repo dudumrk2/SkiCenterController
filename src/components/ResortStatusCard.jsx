@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useResortStatus } from '../hooks/useResortStatus';
 import { useConfig } from '../contexts/ConfigContext';
 import { FaSnowflake, FaWind, FaTemperatureLow, FaSync, FaBed, FaSkiing } from 'react-icons/fa';
@@ -7,6 +7,10 @@ import { MdChair } from 'react-icons/md';
 const ResortStatusCard = () => {
     const { config } = useConfig();
     const { statusData, loading, refreshStatus } = useResortStatus();
+
+    useEffect(() => {
+        refreshStatus();
+    }, []); // Run once on mount
 
     return (
         <div className="glass-panel" style={{

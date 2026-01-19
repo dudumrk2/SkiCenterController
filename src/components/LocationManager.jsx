@@ -23,41 +23,46 @@ const LocationManager = () => {
         let intervalId = null;
 
         const startTracking = async () => {
-            const isNative = Capacitor.isNativePlatform();
-            console.log(`[LocationService] Starting. Native: ${isNative}, Recording: ${isRecording}`);
+            console.log(`[LocationService] Starting tracking`);
 
-            if (isNative) {
-                // NATIVE: Use Capacitor Geolocation
-                try {
-                    await Geolocation.checkPermissions();
-                    watchId = await Geolocation.watchPosition({
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 3000 // Allow slightly cached positions for battery
-                    }, (position, err) => {
-                        if (position) {
-                            handleLocationUpdate({
-                                lat: position.coords.latitude,
-                                lng: position.coords.longitude
-                            });
+            try {
+                const isNative = Capacitor.isNativePlatform();
+
+                if (isNative) {
+                    // Check permissions on Native
+                    const perm = await Geolocation.checkPermissions();
+                    if (perm.location !== 'granted') {
+                        const req = await Geolocation.requestPermissions();
+                        if (req.location !== 'granted') {
+                            console.warn("Location permission denied (Native)");
+                            return;
                         }
-                    });
-                } catch (e) {
-                    console.error("Native GPS Error:", e);
+                    }
+                } else {
+                    // Web: Browser automatically handles permissions on first call to getCurrentPosition/watchPosition
+                    // No need to call 'checkPermissions' which might throw 'Not Implemented'
+                    console.log("Web Platform: Skipping manual permission check, browser will prompt.");
                 }
-            } else {
-                // WEB: Simulation (or Browser GPS if we wanted)
-                // Keeping simulation as per original requirement for now, 
-                // but effectively 'Ski Mode' wake lock keeps this interval alive.
-                const intervalMs = isRecording ? (config.recordingInterval || 5000) : (config.gpsInterval || 60000);
-                intervalId = setInterval(async () => {
-                    const baseLat = config.hotel?.location?.lat || PILA_BASE.lat;
-                    const baseLng = config.hotel?.location?.lng || PILA_BASE.lng;
-                    const jitter = 0.002;
-                    const lat = baseLat + (Math.random() * jitter - jitter / 2);
-                    const lng = baseLng + (Math.random() * jitter - jitter / 2);
-                    handleLocationUpdate({ lat, lng });
-                }, intervalMs);
+
+                // Capacitor Geolocation.watchPosition works on Web too (wraps navigator.geolocation)
+                watchId = await Geolocation.watchPosition({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 3000
+                }, (position, err) => {
+                    if (err) {
+                        console.error("Location Watch Error:", err);
+                        return;
+                    }
+                    if (position) {
+                        handleLocationUpdate({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error("GPS Start Error:", e);
             }
         };
 

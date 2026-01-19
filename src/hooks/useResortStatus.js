@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { useConfig } from '../contexts/ConfigContext';
 
 export const useResortStatus = () => {
@@ -41,11 +41,23 @@ export const useResortStatus = () => {
         return () => unsubscribe();
     }, []);
 
-    const refreshStatus = async () => {
+    const refreshStatus = useCallback(async () => {
         setLoading(true);
         try {
+            const docRef = doc(db, 'artifacts', 'pila-ski-2025', 'public', 'resortStatus');
+
+            // Fetch latest first to ensure we base changes on current reality
+            // (avoids resetting to defaults on page load race condition)
+            const snap = await getDoc(docRef);
+            let currentTemp = statusData.temp;
+
+            if (snap.exists()) {
+                const data = snap.data();
+                if (typeof data.temp === 'number') currentTemp = data.temp;
+            }
+
             const randomTempChange = Math.floor(Math.random() * 3) - 1;
-            const newTemp = statusData.temp + randomTempChange;
+            const newTemp = currentTemp + randomTempChange;
 
             // Randomly close a lift
             const lifts = config?.lifts || [];
@@ -68,7 +80,6 @@ export const useResortStatus = () => {
 
             const openCount = lifts.length - closedCount;
 
-            const docRef = doc(db, 'artifacts', 'pila-ski-2025', 'public', 'resortStatus');
             await setDoc(docRef, {
                 liftsOpen: openCount,
                 liftsTotal: lifts.length,
@@ -82,11 +93,10 @@ export const useResortStatus = () => {
 
         } catch (error) {
             console.error("Refresh failed:", error);
-            // alert("Failed to refresh status"); // Removed alert for hook
         } finally {
             setLoading(false);
         }
-    };
+    }, [config, statusData.temp]); // Keep deps, though fetching fresh data makes temp dep less critical
 
     return { statusData, loading, refreshStatus };
 };

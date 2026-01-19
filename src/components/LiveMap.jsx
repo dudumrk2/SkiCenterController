@@ -62,19 +62,34 @@ const FRIEND_COLORS = [
 ];
 
 // Component to recenter map on user location
-const MapRecenter = ({ center }) => {
+const MapRecenter = ({ center, isUserLocation }) => {
     const map = useMap();
-    const hasCentered = React.useRef(false);
+    const hasCenteredOnUser = React.useRef(false);
+    const hasCenteredOnDefault = React.useRef(false);
 
     useEffect(() => {
-        if (center && center.lat && center.lng && !hasCentered.current) {
-            map.flyTo([center.lat, center.lng], 15, {
-                animate: true,
-                duration: 1.5
-            });
-            hasCentered.current = true;
+        if (!center || !center.lat || !center.lng) return;
+
+        // Strategy:
+        // 1. If it's the User's Real Location, and we haven't centered on USER yet, do it.
+        //    (This overrides any previous Default centering)
+        if (isUserLocation) {
+            if (!hasCenteredOnUser.current) {
+                console.log("Flying to User Location:", center);
+                map.flyTo([center.lat, center.lng], 15, { animate: true, duration: 1.5 });
+                hasCenteredOnUser.current = true;
+            }
         }
-    }, [center, map]);
+        // 2. If it's just the Default location, and we haven't centered on anything yet, do it.
+        else {
+            if (!hasCenteredOnDefault.current && !hasCenteredOnUser.current) {
+                console.log("Centering on Default:", center);
+                map.setView([center.lat, center.lng], 14);
+                hasCenteredOnDefault.current = true;
+            }
+        }
+    }, [center, isUserLocation, map]);
+
     return null;
 };
 
@@ -102,7 +117,7 @@ const LiveMap = () => {
                     />
 
                     {/* Live Recenter */}
-                    <MapRecenter center={userStatus.location} />
+                    <MapRecenter center={center} isUserLocation={!!userStatus.location} />
 
                     {/* Recorded Path visualization */}
                     {isRecording && currentPath.length > 1 && (
