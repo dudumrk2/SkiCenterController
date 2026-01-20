@@ -8,53 +8,13 @@ import ResortStatusCard from '../components/ResortStatusCard';
 import MapWithStatus from '../components/MapWithStatus';
 import Schedule from '../components/Schedule';
 import { useTripMembers } from '../hooks/useTripMembers';
-import { useWakeLock } from '../hooks/useWakeLock';
-import { FaBatteryFull, FaRegEye, FaRegPaperPlane } from 'react-icons/fa';
+import { FaRegPaperPlane } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { config } = useConfig();
     const { userStatus } = useAuth(); // Get live status
     const { members } = useTripMembers();
-    const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
-    const [showLockScreen, setShowLockScreen] = React.useState(false);
-    // State for exact viewport dimensions
-    const getViewportSize = () => {
-        if (window.visualViewport) {
-            return { width: window.visualViewport.width, height: window.visualViewport.height };
-        }
-        return { width: window.innerWidth, height: window.innerHeight };
-    };
 
-    const [viewportSize, setViewportSize] = React.useState(getViewportSize());
-
-    // Handle Resize
-    React.useEffect(() => {
-        const handleResize = () => setViewportSize(getViewportSize());
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleResize);
-        }
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-
-        return () => {
-            if (window.visualViewport) {
-                window.visualViewport.removeEventListener('resize', handleResize);
-            }
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleResize);
-        }
-    }, []);
-
-    // Lock Scroll when Ski Mode is active
-    React.useEffect(() => {
-        if (showLockScreen && isWakeLockActive) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => { document.body.style.overflow = ''; }
-    }, [showLockScreen, isWakeLockActive]);
 
     if (!config) return null;
 
@@ -103,71 +63,7 @@ const Dashboard = () => {
             <ProfileCard />
 
             {/* iOS Web Ski Mode Toggle */}
-            {isSupported && (
-                <button
-                    onClick={() => {
-                        toggleWakeLock();
-                        // Auto-show lock screen if we are TURNING ON ski mode
-                        if (!isWakeLockActive) {
-                            setShowLockScreen(true);
-                        }
-                    }}
-                    className="glass-panel"
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        marginBottom: '15px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        background: isWakeLockActive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)',
-                        border: isWakeLockActive ? '1px solid #22c55e' : '1px solid rgba(255,255,255,0.1)',
-                        color: isWakeLockActive ? '#4ade80' : 'var(--color-text-muted)',
-                        cursor: 'pointer'
-                    }}
-                >
-                    {isWakeLockActive ? <FaRegEye /> : <FaBatteryFull />}
-                    <span style={{ fontWeight: 'bold' }}>
-                        {isWakeLockActive ? "Ski Mode Active (Screen On)" : "Enable Ski Mode"}
-                    </span>
-                </button>
-            )}
 
-            {/* POCKET LOCK OVERLAY - Using Portal with JS Dimensions */}
-            {showLockScreen && isWakeLockActive && createPortal(
-                <div style={{
-                    position: 'fixed', top: 0, left: 0,
-                    width: `${viewportSize.width}px`,
-                    height: `${viewportSize.height}px`,
-                    background: '#000000', zIndex: 99999, // Max Z
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    touchAction: 'none',
-                    overscrollBehavior: 'none'
-                }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🔒</div>
-                    <h2 style={{ color: '#444', margin: '0 0 10px 0' }}>Ski Mode Active</h2>
-                    <p style={{ color: '#333', marginBottom: '40px' }}>Screen dimmed to save battery.</p>
-
-                    <button
-                        onClick={() => setShowLockScreen(false)}
-                        style={{
-                            padding: '20px 40px',
-                            background: 'transparent',
-                            border: '2px solid #333',
-                            color: '#333',
-                            borderRadius: '50px',
-                            fontSize: '1.2rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Double Tap to Unlock
-                    </button>
-                    <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.2, color: '#444' }}>(Simulation: Just Click for now)</p>
-                </div>,
-                document.body
-            )}
 
             <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>{config.resortName}</h1>
 

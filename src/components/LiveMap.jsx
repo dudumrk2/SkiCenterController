@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useConfig } from '../contexts/ConfigContext';
+import { FaBatteryFull, FaRegEye } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import { useRide } from '../contexts/RideContext';
 import { useTripMembers } from '../hooks/useTripMembers'; // New Hook
@@ -98,6 +101,47 @@ const LiveMap = () => {
     const { userStatus } = useAuth();
     const { isRecording, startRecording, stopRecording, currentPath, currentRideStats } = useRide();
     const { members } = useTripMembers();
+    const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
+    const [showLockScreen, setShowLockScreen] = React.useState(false);
+
+    // State for exact viewport dimensions
+    const getViewportSize = () => {
+        if (window.visualViewport) {
+            return { width: window.visualViewport.width, height: window.visualViewport.height };
+        }
+        return { width: window.innerWidth, height: window.innerHeight };
+    };
+
+    const [viewportSize, setViewportSize] = React.useState(getViewportSize());
+
+    // Handle Resize
+    useEffect(() => {
+        const handleResize = () => setViewportSize(getViewportSize());
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        }
+    }, []);
+
+    // Lock Scroll when Ski Mode is active
+    useEffect(() => {
+        if (showLockScreen && isWakeLockActive) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; }
+    }, [showLockScreen, isWakeLockActive]);
 
     // Default center (Resort Base or Configured Hotel)
     const defaultCenter = config.hotel?.location || { lat: 45.733, lng: 7.320 };
@@ -179,22 +223,62 @@ const LiveMap = () => {
                     transform: 'translateX(-50%)',
                     zIndex: 900,
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '10px',
+                    width: '95%',
+                    maxWidth: '600px',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap' // Allow wrapping on very small screens if needed
                 }}>
+                    {/* Ski Mode Toggle */}
+                    {isSupported && (
+                        <button
+                            onClick={() => {
+                                toggleWakeLock();
+                                // Auto-show lock screen if we are TURNING ON ski mode
+                                if (!isWakeLockActive) {
+                                    setShowLockScreen(true);
+                                }
+                            }}
+                            style={{
+                                background: isWakeLockActive ? 'rgba(34, 197, 94, 0.9)' : 'rgba(15, 23, 42, 0.8)',
+                                color: isWakeLockActive ? 'white' : '#cbd5e1',
+                                border: isWakeLockActive ? '1px solid #166534' : '1px solid rgba(255,255,255,0.2)',
+                                padding: '10px 20px', // Standardized
+                                borderRadius: '50px',
+                                fontWeight: 'bold',
+                                fontSize: '0.9rem', // Standardized
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+                                backdropFilter: 'blur(4px)',
+                                flex: '1 1 auto', // Allow grow/shrink
+                                minWidth: '140px', // Ensure decent size
+                                maxWidth: '200px'
+                            }}
+                        >
+                            {isWakeLockActive ? <FaRegEye /> : <FaBatteryFull />}
+                            <span>{isWakeLockActive ? "Ski Mode On" : "Enable Ski Mode"}</span>
+                        </button>
+                    )}
+
                     {isRecording ? (
                         <>
                             {/* Stats Box */}
                             <div style={{
                                 background: 'rgba(15, 23, 42, 0.9)',
                                 color: 'white',
-                                padding: '8px 16px',
+                                padding: '10px 16px',
                                 borderRadius: '20px',
                                 display: 'flex',
                                 gap: '16px',
                                 fontSize: '0.9rem',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)'
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+                                whiteSpace: 'nowrap'
                             }}>
                                 <span>📏 {currentRideStats.distance.toFixed(2)} km</span>
                                 <span>⏱️ {Math.floor(currentRideStats.duration / 60)}:{(currentRideStats.duration % 60).toFixed(0).padStart(2, '0')}</span>
@@ -207,18 +291,22 @@ const LiveMap = () => {
                                     background: '#ef4444',
                                     color: 'white',
                                     border: 'none',
-                                    padding: '10px 24px',
+                                    padding: '10px 20px', // Standardized
                                     borderRadius: '50px',
                                     fontWeight: 'bold',
-                                    fontSize: '1rem',
+                                    fontSize: '0.9rem', // Standardized
                                     boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px'
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    flex: '1 1 auto',
+                                    minWidth: '140px',
+                                    maxWidth: '200px'
                                 }}
                             >
-                                ⏹ Stop Recording
+                                ⏹ Stop Rec
                             </button>
                         </>
                     ) : (
@@ -228,23 +316,63 @@ const LiveMap = () => {
                                 background: '#3b82f6',
                                 color: 'white',
                                 border: 'none',
-                                padding: '10px 24px',
+                                padding: '10px 20px', // Standardized
                                 borderRadius: '50px',
                                 fontWeight: 'bold',
-                                fontSize: '1rem',
+                                fontSize: '0.9rem', // Standardized
                                 boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '8px'
+                                justifyContent: 'center',
+                                gap: '8px',
+                                flex: '1 1 auto',
+                                minWidth: '140px',
+                                maxWidth: '200px'
                             }}
                         >
-                            ⏺ Start Recording
+                            ⏺ Start Rec
                         </button>
                     )}
                 </div>
 
+
             </div>
+
+            {/* POCKET LOCK OVERLAY - Using Portal with JS Dimensions */}
+            {showLockScreen && isWakeLockActive && createPortal(
+                <div style={{
+                    position: 'fixed', top: 0, left: 0,
+                    width: `${viewportSize.width}px`,
+                    height: `${viewportSize.height}px`,
+                    background: '#000000', zIndex: 99999, // Max Z
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    touchAction: 'none',
+                    overscrollBehavior: 'none'
+                }}>
+                    <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🔒</div>
+                    <h2 style={{ color: '#444', margin: '0 0 10px 0' }}>Ski Mode Active</h2>
+                    <p style={{ color: '#333', marginBottom: '40px' }}>Screen dimmed to save battery.</p>
+
+                    <button
+                        onClick={() => setShowLockScreen(false)}
+                        style={{
+                            padding: '20px 40px',
+                            background: 'transparent',
+                            border: '2px solid #333',
+                            color: '#333',
+                            borderRadius: '50px',
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Double Tap to Unlock
+                    </button>
+                    <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.2, color: '#444' }}>(Simulation: Just Click for now)</p>
+                </div>,
+                document.body
+            )}
         </div>
     );
 };
