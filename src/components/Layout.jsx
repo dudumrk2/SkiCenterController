@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { FaMountain, FaList, FaRegCalendarAlt, FaMapMarkedAlt, FaHistory, FaExclamationTriangle } from 'react-icons/fa';
+import { FaMountain, FaList, FaRegCalendarAlt, FaMapMarkedAlt, FaHistory, FaExclamationTriangle, FaSkiing } from 'react-icons/fa';
+import { createPortal } from 'react-dom';
 import SOSButton from './SOSButton';
 import { useTripMembers } from '../hooks/useTripMembers';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 const Layout = () => {
     const location = useLocation();
@@ -11,6 +13,49 @@ const Layout = () => {
     // Global SOS Monitoring
     const { members } = useTripMembers();
     const [sosAlert, setSosAlert] = useState(null);
+
+    // Ski Mode (Wake Lock) Logic - Lifted from Dashboard/LiveMap
+    const { isSupported, active: isWakeLockActive, toggleWakeLock } = useWakeLock();
+    const [showLockScreen, setShowLockScreen] = useState(false);
+
+    // State for exact viewport dimensions for the Lock Screen
+    const getViewportSize = () => {
+        if (window.visualViewport) {
+            return { width: window.visualViewport.width, height: window.visualViewport.height };
+        }
+        return { width: window.innerWidth, height: window.innerHeight };
+    };
+
+    const [viewportSize, setViewportSize] = useState(getViewportSize());
+
+    // Handle Resize for Lock Screen
+    useEffect(() => {
+        const handleResize = () => setViewportSize(getViewportSize());
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleResize);
+        }
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+
+        return () => {
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        }
+    }, []);
+
+    // Lock Scroll when Ski Mode Lock Screen is active
+    useEffect(() => {
+        if (showLockScreen && isWakeLockActive) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; }
+    }, [showLockScreen, isWakeLockActive]);
 
     useEffect(() => {
         const sosMember = members.find(m => m.isSOS);
@@ -120,10 +165,75 @@ const Layout = () => {
                     </NavLink>
                 ))}
 
+                {/* Ski Mode Toggle in Nav */}
+                {isSupported && (
+                    <button
+                        onClick={() => {
+                            toggleWakeLock();
+                            // Auto-show lock screen if we are TURNING ON ski mode
+                            if (!isWakeLockActive) {
+                                setShowLockScreen(true);
+                            }
+                        }}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: isWakeLockActive ? '#4ade80' : 'var(--color-text-muted)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            fontSize: '0.8rem',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            padding: 0
+                        }}
+                    >
+                        <span style={{ fontSize: '1.4rem' }}><FaSkiing /></span>
+                        <span>{isWakeLockActive ? "Ski On" : "Ski Mode"}</span>
+                    </button>
+                )}
+
                 {/* SOS Button Integration */}
                 <SOSButton />
             </nav>
-        </div>
+
+            {/* POCKET LOCK OVERLAY - Global Portal */}
+            {
+                showLockScreen && isWakeLockActive && createPortal(
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0,
+                        width: `${viewportSize.width}px`,
+                        height: `${viewportSize.height}px`,
+                        background: '#000000', zIndex: 99999, // Max Z
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        touchAction: 'none',
+                        overscrollBehavior: 'none'
+                    }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '20px', opacity: 0.3 }}>🔒</div>
+                        <h2 style={{ color: '#444', margin: '0 0 10px 0' }}>Ski Mode Active</h2>
+                        <p style={{ color: '#333', marginBottom: '40px' }}>Screen dimmed to save battery.</p>
+
+                        <button
+                            onClick={() => setShowLockScreen(false)}
+                            style={{
+                                padding: '20px 40px',
+                                background: 'transparent',
+                                border: '2px solid #333',
+                                color: '#333',
+                                borderRadius: '50px',
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Double Tap to Unlock
+                        </button>
+                        <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.2, color: '#444' }}>(Simulation: Just Click for now)</p>
+                    </div>,
+                    document.body
+                )
+            }
+        </div >
     );
 };
 
